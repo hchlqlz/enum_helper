@@ -79,6 +79,8 @@ string GetEnumTypeName(const string& strFuncSig);
 template<typename T>
 string GetEnumName(T enumValue, const std::function<char(char)> processor = nullptr)
 {
+    static_assert(std::is_enum_v<T>, __FUNCTION__ "'s enumValue need a enum");
+
     static map<T, string> s_mapName;
 
     if ((unsigned)enumValue == 0)
