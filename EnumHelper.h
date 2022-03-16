@@ -1,24 +1,19 @@
 #pragma once
 
-#include <stdio.h>
-#include <iostream>
-#include <cmath>
 #include <map>
 #include <algorithm>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <functional>
-using namespace std;
 
-vector<string> split(const string& str, const string& sep);
+std::vector<std::string> split(const std::string& str, const std::string& sep);
 
 template<typename T>
-string EnumHelper(T key, const std::function<char(char)> processor = nullptr, const char* pszName = NULL)
+std::string EnumHelper(T key, const std::function<char(char)> processor = nullptr, const char* pszName = NULL)
 {
     static_assert(std::is_enum_v<T>, __FUNCTION__ "'s key need a enum");
 
-    static map<T, string> s_mapName;
+    static std::map<T, std::string> s_mapName;
 
     if (nullptr != pszName)
     {
@@ -55,8 +50,7 @@ size_t ParseEnum(T enumClass, const char* pszNames)
 
     if (nullptr != pszNames)
     {
-        const vector<string>& vecName = split(pszNames, ",");
-
+        const std::vector<std::string>& vecName = split(pszNames, ",");
         for (int i = 0; i < vecName.size(); ++i)
         {
             if (vecName.at(i).size() > 0)
@@ -72,16 +66,16 @@ size_t ParseEnum(T enumClass, const char* pszNames)
     return 0;
 }
 
-size_t EnumHelper(const char* pszTypeName, vector<string>& vecNames, const char* pszNames = NULL);
+size_t EnumHelper(const char* pszTypeName, std::vector<std::string>& vecNames, const char* pszNames = NULL);
 size_t ParseEnum(const char* pszTypeName, const char* pszNames);
-string GetEnumTypeName(const string& strFuncSig);
+std::string GetEnumTypeName(const std::string& strFuncSig);
 
 template<typename T>
-string GetEnumName(T enumValue, const std::function<char(char)> processor = nullptr)
+std::string GetEnumName(T enumValue, const std::function<char(char)> processor = nullptr)
 {
     static_assert(std::is_enum_v<T>, __FUNCTION__ "'s enumValue need a enum");
 
-    static map<T, string> s_mapName;
+    static std::map<T, std::string> s_mapName;
 
     if ((unsigned)enumValue == 0)
     {
@@ -90,8 +84,8 @@ string GetEnumName(T enumValue, const std::function<char(char)> processor = null
 
     if (!s_mapName.count((T)0))
     {
-		const string& strEnumTypeName = GetEnumTypeName(__FUNCSIG__);
-		vector<string> vecNames;
+		const std::string& strEnumTypeName = GetEnumTypeName(__FUNCSIG__);
+        std::vector<std::string> vecNames;
 		EnumHelper(strEnumTypeName.c_str(), vecNames);
         s_mapName[(T)0] = "placeholder";
 		for (int i = 0; i < vecNames.size(); ++i)
@@ -100,7 +94,7 @@ string GetEnumName(T enumValue, const std::function<char(char)> processor = null
 		}
     }
 
-	string res;
+    std::string res;
 	auto it = s_mapName.find(enumValue);
 	if (it != s_mapName.end())
 	{

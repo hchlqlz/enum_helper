@@ -1,5 +1,7 @@
 #include "EnumHelper.h"
 
+using namespace std;
+
 vector<string> split(const string& str, const string& sep)
 {
     vector<string> ret;
