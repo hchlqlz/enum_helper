@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <functional>
+#include <algorithm>
 
 // 编译期字符串结构体（通过buffer和size确定内容）
 struct CompilerStr
@@ -42,6 +44,7 @@ struct CompilerStrs
         {
             return "";
         }
+
         return values[index].ToString();
     }
 };
@@ -107,6 +110,20 @@ constexpr int CompilerGetEnumNamesNum(const char* buffer)
 
 // 获取枚举名的模板函数
 template<typename T>
+inline std::string GetEnumName(T enumValue, const std::function<char(char)> processor)
+{
+    if (processor != nullptr)
+    {
+        std::string res(GetEnumName(enumValue));
+        std::transform(res.begin(), res.end(), res.begin(), processor);
+        return res;
+    }
+
+    return GetEnumName(enumValue);
+}
+
+// 获取枚举名的模板函数
+template<typename T>
 inline std::string GetEnumName(T enumValue)
 {
     return "";
@@ -127,9 +144,10 @@ GetEnumName(Color::Red, std::toupper) -> "RED"
 */
 #define ENUM_DEFINE(type, ...) enum class type { __VA_ARGS__ }; \
     constexpr int ENUM_SIZE_OF_##type = CompilerGetEnumNamesNum(#__VA_ARGS__); \
-    constexpr CompilerStrs<ENUM_SIZE_OF_##type> ENUM_NAMES_OF_##type = CompilerSplitEnumNames<ENUM_SIZE_OF_##type>(#__VA_ARGS__);\
+    constexpr char ENUM_ORIGIN_NAMES_OF_##type[] = #__VA_ARGS__; \
+    constexpr CompilerStrs<ENUM_SIZE_OF_##type> ENUM_NAMES_OF_##type = CompilerSplitEnumNames<ENUM_SIZE_OF_##type>(ENUM_ORIGIN_NAMES_OF_##type);\
     template<> \
     inline std::string GetEnumName<type>(type enumValue) \
     {\
-        return ENUM_NAMES_OF_##type.GetStr((int)enumValue);\
+        return ENUM_NAMES_OF_##type.GetStr((int)enumValue); \
     }
