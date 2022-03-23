@@ -112,6 +112,19 @@ inline std::string GetEnumName(T enumValue)
     return "";
 }
 
+/*
+ENUM_DEFINE 用法示例：
+ENUM_DEFINE ( Color,
+    Red,
+    Blue,
+)
+
+GetEnumName(Color::Red) -> "Red"
+GetEnumName(Color::Red, std::toupper) -> "RED"
+
+注意点：
+1、枚举值只能系统自增，不能写 Red = 1，代码未处理该种情况
+*/
 #define ENUM_DEFINE(type, ...) enum class type { __VA_ARGS__ }; \
     constexpr int ENUM_SIZE_OF_##type = CompilerGetEnumNamesNum(#__VA_ARGS__); \
     constexpr CompilerStrs<ENUM_SIZE_OF_##type> ENUM_NAMES_OF_##type = CompilerSplitEnumNames<ENUM_SIZE_OF_##type>(#__VA_ARGS__);\
