@@ -1,126 +1,122 @@
 #pragma once
 
-#include <map>
-#include <algorithm>
 #include <string>
-#include <vector>
-#include <functional>
 
-std::vector<std::string> split(const std::string& str, const std::string& sep);
-
-template<typename T>
-std::string EnumHelper(T key, const std::function<char(char)> processor = nullptr, const char* pszName = NULL)
+// 编译期字符串结构体（通过buffer和size确定内容）
+struct CompilerStr
 {
-    static_assert(std::is_enum_v<T>, __FUNCTION__ "'s key need a enum");
+    const char* buffer;         
+    int size;
 
-    static std::map<T, std::string> s_mapName;
+    constexpr CompilerStr() :
+        buffer(nullptr), size(0)
+    {}
 
-    if (nullptr != pszName)
+    constexpr void FillData(const char* buffer, int size)
     {
-        s_mapName[key] = pszName;
+        this->buffer = buffer;
+        this->size = size;
     }
 
-    std::string res = "";
-    auto it = s_mapName.find(key);
-    if (it != s_mapName.end())
+    std::string ToString() const
     {
-        res = it->second;
-    }
-
-    if (nullptr != processor)
-    {
-        std::transform(res.begin(), res.end(), res.begin(), processor);
-    }
-
-    return res;
-}
-
-template <class T>
-size_t ParseEnum(T enumClass, const char* pszNames)
-{
-    static_assert(std::is_enum_v<T>, __FUNCTION__ "'s enumClass need a enum");
-
-    static size_t s_sizeOfEnum = 0;
-
-    // �����ظ����õĿ���
-    if (s_sizeOfEnum != 0)
-    {
-        return s_sizeOfEnum;
-    }
-
-    if (nullptr != pszNames)
-    {
-        const std::vector<std::string>& vecName = split(pszNames, ",");
-        for (int i = 0; i < vecName.size(); ++i)
+        if (buffer == nullptr || size == 0)
         {
-            if (vecName.at(i).size() > 0)
-            {
-                EnumHelper((T)(i + 1), nullptr, vecName.at(i).c_str() + (i == 0 ? 0 : 1) );
-            }
+            return "";
         }
-
-        s_sizeOfEnum = vecName.size();
-        return s_sizeOfEnum;
+        return std::string(buffer, size);
     }
+};
 
-    return 0;
+// 编译期字符串数组
+template<int N>
+struct CompilerStrs
+{
+    CompilerStr values[N];
+
+    constexpr CompilerStrs() {}
+
+    std::string GetStr(int index) const
+    {
+        if (index < 0 || index >= N)
+        {
+            return "";
+        }
+        return values[index].ToString();
+    }
+};
+
+// 编译期获取字符串长度
+constexpr int CompilerStrlen(const char* buffer)
+{
+    int i = 0;
+    for (; buffer[i]; ++i) {}
+    return i;
 }
 
-size_t EnumHelper(const char* pszTypeName, std::vector<std::string>& vecNames, const char* pszNames = NULL);
-size_t ParseEnum(const char* pszTypeName, const char* pszNames);
-std::string GetEnumTypeName(const std::string& strFuncSig);
-
-template<typename T>
-std::string GetEnumName(T enumValue, const std::function<char(char)> processor = nullptr)
+// 编译期切分枚举名列表（x, y, z ...）
+template<int N>
+constexpr CompilerStrs<N> CompilerSplitEnumNames(const char* buffer)
 {
-    static_assert(std::is_enum_v<T>, __FUNCTION__ "'s enumValue need a enum");
+    CompilerStrs<N> res;
 
-    static std::map<T, std::string> s_mapName;
-
-    if ((unsigned)enumValue == 0)
+    int index = 0;  // 下一个枚举名的下标
+    int offset = -1;// 下一个枚举名的起始位置
+    for (int i = 0; index < N && buffer[i]; ++i)
     {
-        return "";
+        if (buffer[i] == ',')
+        {
+            if (offset >= 0 && offset < i)
+            {
+                res.values[index++].FillData(buffer + offset, i - offset);
+            }
+            offset = -1;
+        }
+        else if (offset == -1 && buffer[i] != ' ')
+        {
+            offset = i;
+        }
     }
 
-    if (!s_mapName.count((T)0))
+    if (index < N && offset != -1)
     {
-		const std::string& strEnumTypeName = GetEnumTypeName(__FUNCSIG__);
-        std::vector<std::string> vecNames;
-		EnumHelper(strEnumTypeName.c_str(), vecNames);
-        s_mapName[(T)0] = "placeholder";
-		for (int i = 0; i < vecNames.size(); ++i)
-		{
-			s_mapName[(T)(i + 1)] = vecNames[i];
-		}
-    }
-
-    std::string res;
-	auto it = s_mapName.find(enumValue);
-	if (it != s_mapName.end())
-	{
-		res = it->second;
-	}
-
-    if (nullptr != processor)
-    {
-        std::transform(res.begin(), res.end(), res.begin(), processor);
+        int len = CompilerStrlen(buffer);
+   
+        if (offset >= 0 && offset < len)
+        {
+            res.values[index++].FillData(buffer + offset, len - offset);
+        }
     }
 
     return res;
 }
 
-/*
-ENUM_DEFINE �÷�ʾ����
-ENUM_DEFINE ( Color,
-    Red,
-    Blue,
-)
+// 编译期获得枚举名列表的枚举数量
+constexpr int CompilerGetEnumNamesNum(const char* buffer)
+{
+    int num = 0;
+    for (int i = 0; buffer[i]; ++i)
+    {
+        if (buffer[i] == ',' && buffer[i+1] != 0)
+        {
+            ++num;
+        }
+    }
+    return num + 1;
+}
 
-EnumHelper(Color::Red) -> "Red"
-EnumHelper(Color::Red, std::toupper) -> "RED"
+// 获取枚举名的模板函数
+template<typename T>
+inline std::string GetEnumName(T enumValue)
+{
+    return "";
+}
 
-ע��㣺
-1��ö��ֵֻ��ϵͳ����������д Red = 1������δ�����������
-*/
-//#define ENUM_DEFINE(type, ...) enum class type { placeholder, __VA_ARGS__ }; const size_t g_uEnumSizeOf##type = ParseEnum(type::placeholder, #__VA_ARGS__);
-#define ENUM_DEFINE(type, ...) enum class type { placeholder, __VA_ARGS__ }; const size_t g_uEnumSizeOf##type = ParseEnum(#type, #__VA_ARGS__);
+#define ENUM_DEFINE(type, ...) enum class type { __VA_ARGS__ }; \
+    constexpr int ENUM_SIZE_OF_##type = CompilerGetEnumNamesNum(#__VA_ARGS__); \
+    constexpr CompilerStrs<ENUM_SIZE_OF_##type> ENUM_NAMES_OF_##type = CompilerSplitEnumNames<ENUM_SIZE_OF_##type>(#__VA_ARGS__);\
+    template<> \
+    inline std::string GetEnumName<type>(type enumValue) \
+    {\
+        return ENUM_NAMES_OF_##type.GetStr((int)enumValue);\
+    }
